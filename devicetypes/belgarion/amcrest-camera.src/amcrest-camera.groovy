@@ -951,6 +951,7 @@ def parse(String description) {  // 'HubAction' Method: Parse events into attrib
 
     def descMap = parseDescriptionAsMap(description)
     def retResult = []
+    def parsedHeaders = ""
 
     doDebug("parse -> descMap RAW = ${descMap.inspect()}", "info")
 

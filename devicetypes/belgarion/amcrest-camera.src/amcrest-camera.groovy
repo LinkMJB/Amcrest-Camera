@@ -24,8 +24,10 @@
  *   - slagle, eparkerjr and scottinpollock: For their efforts on the great Foscam & D-Link device types.
  *   - RBoy: For the code making the JPEG image available to other apps.
  *   - JBethancourt: Works with multiple camera HDCVI systems like the 4-camera AMDV7204-4B: just pick channels 0 through 3 and set up as individual cameras.
+ *   - LinkMJB: For adding digest authentication methods from https://github.com/greko6/SmartThings
  *
  *  Release History:
+ *    2019-07-10: v2.4.0 = Updated to use digest authentication method 
  *    2017-03-11: v2.3.5 = Snapshots now work with the new storeTemporaryImage function.
  *    2017-02-08: v2.3.4 = Fixed a bug that prevented video streaming from working when using a public IP.
  *    2017-01-27: v2.3.3 = Increased the range of channels to 0..15 to accommodate 16 camera NVR systems and fixed snapshots.
@@ -273,7 +275,7 @@ metadata {
         standardTile("labelSensitivity", "device.level",  width: 3, height: 1,inactiveLabel: false) {
             state "sensitivityLabel", label: "Motion Sensitivity", action: ""
         }
-        standardTile("streamType", "device.streamType", width: 3, height: 1, canChangeIcon: false, canChangeBackground: false, decoration: "flat") {
+        standardTile("streamType", "device.streamType", width: 1, height: 1, canChangeIcon: false, canChangeBackground: false, decoration: "flat") {
             state "MJPEG", label: "MJPEG Stream", action: "toggleStreamType", icon: "", backgroundColor: "#FFFFFF"
             state "RTSP", label: "RTSP Stream", action: "toggleStreamType", icon: "", backgroundColor: "#FFFFFF"
         }
@@ -290,7 +292,7 @@ metadata {
                  "labelSpeed", "preset1", "preset2", "preset3",
                  "levelSliderControlSpeed", "preset4", "preset5", "preset6",
                  "labelSensitivity", "flipStatus", "mirrorStatus", "rotateStatus",
-                 "levelSliderControlSensitivity", "streamType"])
+                 "levelSliderControlSensitivity", "streamType", "authenticate"])
     }
 }
 

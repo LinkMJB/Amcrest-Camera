@@ -1385,13 +1385,13 @@ private Integer msDelay() {
 def auth() {
 	trace("setAuth")
 	state.auth = "empty"
-        sendEvent(name: "authenticate", value: "Auth")
+        sendEvent(name: "authenticate", value: "auth")
 }
 
 // method to set remove token (a.k.a. logout)
 def deAuth() {
 	trace("removeAuth")
-	sendEvent(name: "authenticate", value: "Auth")
+	sendEvent(name: "authenticate", value: "auth")
 	state.auth = "empty"
 }
 

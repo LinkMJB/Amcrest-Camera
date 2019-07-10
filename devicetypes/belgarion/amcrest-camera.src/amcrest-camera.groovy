@@ -93,6 +93,8 @@ metadata {
         command "videoSetResSD"
         command "zoomIn"
         command "zoomOut"
+        command "auth"
+        command "deAuth"
     }
 
     preferences {
@@ -280,8 +282,8 @@ metadata {
             state "RTSP", label: "RTSP Stream", action: "toggleStreamType", icon: "", backgroundColor: "#FFFFFF"
         }
         standardTile("authenticate", "device.button", width: 1, height: 1, canChangeIcon: true) {
-            state "DeAuth", label: '${name}', action: "removeAuthToken", icon: "st.switches.light.off", backgroundColor: "#79b821"
-            state "Auth", label: '${name}', action: "setAuthToken", icon: "st.switches.light.on", backgroundColor: "#ffffff"
+            state "DeAuth", label: '${name}', action: "deAuth", icon: "st.switches.light.off", backgroundColor: "#79b821"
+            state "Auth", label: '${name}', action: "auth", icon: "st.switches.light.on", backgroundColor: "#ffffff"
         }
 
         main "videoPlayer"
@@ -908,11 +910,16 @@ private hubGetImage(def apiCommand) {  // Called when taking a picture
         device.deviceNetworkId = "$hosthex:$porthex"
         doDebug("hubGetImage -> Network Device Id = $device.deviceNetworkId", "info")
 
-        // Set our Params & Headers
+        // Set our Headers
         def headers = [:]
-        def userPassAscii = "${camUser}:${camPassword}"
-        def userPass = "Basic " + userPassAscii.encodeAsBase64().toString()
-        headers.put("Authorization", userPass)
+        if (!state.auth || state.auth == "empty") {
+          // empty request to get nonce token
+        } else {
+          def auth_headers = calcDigestAuth(state.auth)
+          headers.put("Authorization", "${auth_headers}")
+        }
+        headers.put("Accept", "*/*")
+        headers.put("Host", "${state.Host}:${camPort}")
         doDebug("hubGetImage -> headers = ${headers.inspect()}", "info")
 
         def params = [
@@ -954,6 +961,15 @@ def parse(String description) {  // 'HubAction' Method: Parse events into attrib
     if (descMap["headers"]) {
         String headers = new String(descMap["headers"].decodeBase64())
         doDebug("parse -> headers = ${headers}", "info")
+        parsedHeaders = parseHttpHeaders(headers)
+        
+        if (parsedHeaders.auth) {
+			// set required tokens in the special state variable (see description above)
+			state.auth = parsedHeaders.auth
+			trace("Got 401, send request again (click on 'take' one more time): " + state.auth)
+			sendEvent(name: "authenticate", value: "deAuth")
+			return result
+        }
     }
     // Image Response
     if (descMap["tempImageKey"]) {
@@ -1366,14 +1382,14 @@ private Integer msDelay() {
 // Adapted from https://github.com/LinkMJB/SmartThings/blob/master/Devices/Samsung%20SmartCam%20SNH-P6410BN/SNH-P6410BN.groovy
 
 // method to set digest token
-def setAuthToken() {
+def auth() {
 	trace("setAuth")
 	state.auth = "empty"
         sendEvent(name: "authenticate", value: "Auth")
 }
 
 // method to set remove token (a.k.a. logout)
-def removeAuthToken() {
+def deAuth() {
 	trace("removeAuth")
 	sendEvent(name: "authenticate", value: "Auth")
 	state.auth = "empty"
@@ -1412,6 +1428,64 @@ private String calcDigestAuth(headers) {
            'opaque="",' + eol +
            'nc=' + state.nc + ',' + eol +
            'response="' + response_enc.trim() + '"'
+}
+
+/*
+// method to parse output from the camera
+def parse(String output) {
+	trace("Parsing output: '${output}'")
+	def headers = ""
+	def parsedHeaders = ""
+	def map = stringToMap(output)
+
+	if (map.headers) {
+		headers = new String(map.headers.decodeBase64())
+		parsedHeaders = parseHttpHeaders(headers)
+
+		if (parsedHeaders.auth) {
+			// set required tokens in the special state variable (see description above)
+			state.auth = parsedHeaders.auth
+			trace("Got 401, send request again (click on 'take' one more time): " + state.auth)
+			sendEvent(name: "authenticate", value: "deAuth")
+			return result
+		}
+	}
+
+	if (map.body != null) {
+		def bodyString = new String(map.body.decodeBase64())
+		trace(bodyString)
+	}
+
+	if (map.bucket && map.key) {
+		trace("Uploading the picture to amazon S3")
+		putImageInS3(map)
+	}
+
+	return result
+}
+*/
+
+// parse headers that are returned from the camera
+private parseHttpHeaders(String headers) {
+	def lines = headers.readLines()
+	def status = lines[0].split()
+
+	def result = [
+	  protocol: status[0],
+	  status: status[1].toInteger(),
+	  reason: status[2]
+	]
+
+	if (result.status == 401) {
+		result.auth = stringToMap(lines[1].replaceAll("WWW-Authenticate: Digest ", "").replaceAll("=", ":").replaceAll("\"", ""))
+		trace("It's ok. Press take again" + result.auth)
+	}
+
+	if (result.status == 200) {
+		trace("Authentication successful! :" + result)
+	}
+
+	return result
 }
 
 //***********************************  Debugging  **********************************

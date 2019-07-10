@@ -264,8 +264,8 @@ metadata {
         }
         standardTile("rotateStatus", "device.rotateStatus", width: 1, height: 1, canChangeIcon: false, decoration: "flat") {
             state "off", label: "Rotation", action: "changeRotation", icon: "http://smartthings.belgarion.s3.amazonaws.com/images/3D-Slider-OFF-Top.png", backgroundColor: "#FFFFFF", nextState: "..."
-            state "cw", label: "90°", action: "changeRotation", icon: "http://smartthings.belgarion.s3.amazonaws.com/images/Rotate-CW.png", backgroundColor: "#FFFFFF", nextState: "..."
-            state "ccw", label: "90°", action: "changeRotation", icon: "http://smartthings.belgarion.s3.amazonaws.com/images/Rotate-CCW.png", backgroundColor: "#FFFFFF", nextState: "..."
+            state "cw", label: "90Â°", action: "changeRotation", icon: "http://smartthings.belgarion.s3.amazonaws.com/images/Rotate-CW.png", backgroundColor: "#FFFFFF", nextState: "..."
+            state "ccw", label: "90Â°", action: "changeRotation", icon: "http://smartthings.belgarion.s3.amazonaws.com/images/Rotate-CCW.png", backgroundColor: "#FFFFFF", nextState: "..."
             state "...", label: "...", action: "", nextState: "..."
         }
 
@@ -276,6 +276,10 @@ metadata {
         standardTile("streamType", "device.streamType", width: 3, height: 1, canChangeIcon: false, canChangeBackground: false, decoration: "flat") {
             state "MJPEG", label: "MJPEG Stream", action: "toggleStreamType", icon: "", backgroundColor: "#FFFFFF"
             state "RTSP", label: "RTSP Stream", action: "toggleStreamType", icon: "", backgroundColor: "#FFFFFF"
+        }
+        standardTile("authenticate", "device.button", width: 1, height: 1, canChangeIcon: true) {
+            state "DeAuth", label: '${name}', action: "removeAuthToken", icon: "st.switches.light.on", backgroundColor: "#79b821"
+            state "Auth", label: '${name}', action: "setAuthToken", icon: "st.switches.light.off", backgroundColor: "#ffffff"
         }
 
         main "videoPlayer"
@@ -755,19 +759,19 @@ private doToggleRotation(Boolean doHubGet) {
     doDebug("doToggleRotation -> BEGIN (hubGet Enabled?: ${doHubGet ?: false})", "info", 0)
     if (doHubGet == true) {
         if (!state.Rotation || (state.Rotation == "off")) {
-            doDebug("Toggle 90° Rotation: Rotation set to 'Clockwise'", "info", 1)
+            doDebug("Toggle 90Â° Rotation: Rotation set to 'Clockwise'", "info", 1)
             state.Rotate = 1
             state.Rotation = "cw"
             sendEvent(name: "rotateStatus", value: "cw", isStateChange: true, displayed: false)
         }
         else if (state.Rotation == "cw") {
-            doDebug("Toggle 90° Rotation: Rotation set to 'Counter-Clockwise'", "info", 1)
+            doDebug("Toggle 90Â° Rotation: Rotation set to 'Counter-Clockwise'", "info", 1)
             state.Rotate = 2
             state.Rotation = "ccw"
             sendEvent(name: "rotateStatus", value: "ccw", isStateChange: true, displayed: false)
         }
         else {
-            doDebug("Toggle 90° Rotation: Rotation turned 'OFF'", "info", 1)
+            doDebug("Toggle 90Â° Rotation: Rotation turned 'OFF'", "info", 1)
             state.Rotate = 0
             state.Rotation = "off"
             sendEvent(name: "rotateStatus", value: "off", isStateChange: true, displayed: false)
@@ -777,13 +781,13 @@ private doToggleRotation(Boolean doHubGet) {
     }
     else {
         if (rotateStatus == "off" && (state.Rotation == "cw")) {
-            doDebug("Toggle 90° Rotation: Rotation set to 'Clockwise'", "info", 1)
+            doDebug("Toggle 90Â° Rotation: Rotation set to 'Clockwise'", "info", 1)
         }
         else if (rotateStatus == "cw" && (state.Rotation == "ccw")) {
-            doDebug("Toggle 90° Rotation: Rotation set to 'Counter-Clockwise'", "info", 1)
+            doDebug("Toggle 90Â° Rotation: Rotation set to 'Counter-Clockwise'", "info", 1)
         }
         else if (rotateStatus == "ccw" && (state.Rotation == "off")) {
-            doDebug("Toggle 90° Rotation: Rotation turned 'OFF'", "info", 1)
+            doDebug("Toggle 90Â° Rotation: Rotation turned 'OFF'", "info", 1)
         }
     }
 }
@@ -844,10 +848,14 @@ private hubGet(def apiCommand, Boolean isImage = false) {  // Called for all non
 
     // Set our Headers
     def headers = [:]
-    def userPassAscii = "${camUser}:${camPassword}"
-    def userPass = "Basic " + userPassAscii.encodeAsBase64().toString()
-    headers.put("HOST", "${state.Host}:${camPort}")
-    headers.put("Authorization", userPass)
+    if (!state.auth || state.auth == "empty") {
+      // empty request to get nonce token
+    } else {
+      def auth_headers = calcDigestAuth(state.auth)
+      headers.put("Authorization", "${auth_headers}")
+    }
+    headers.put("Accept", "*/*")
+    headers.put("Host", "${state.Host}:${camPort}")
     doDebug("hubGet -> headers = ${headers.inspect()}", "info")
 
     // Do the deed
@@ -1118,19 +1126,19 @@ private processResponse(def bodyIn) {
 
         // Rotation
         if (body.contains("VideoInOptions[$camChannel].Rotate90=0") && (state.Rotate != 0)) {
-            doDebug("processResponse -> Setting Rotation to 0°", "trace")
+            doDebug("processResponse -> Setting Rotation to 0Â°", "trace")
             state.Rotate = 0
             state.Rotation = "off"
             sendEvent(name: "rotateStatus", value: "off", isStateChange: true, displayed: false)
         }
         else if (body.contains("VideoInOptions[$camChannel].Rotate90=1") && (state.Rotate != 1)) {
-            doDebug("processResponse -> Setting Rotation to 90°", "trace")
+            doDebug("processResponse -> Setting Rotation to 90Â°", "trace")
             state.Rotate = 1
             state.Rotation = "cw"
             sendEvent(name: "rotateStatus", value: "cw", isStateChange: true, displayed: false)
         }
         else if (body.contains("VideoInOptions[$camChannel].Rotate90=2") && (state.Rotate != 2)) {
-            doDebug("processResponse -> Setting Rotation to 270°", "trace")
+            doDebug("processResponse -> Setting Rotation to 270Â°", "trace")
             state.Rotate = 2
             state.Rotation = "ccw"
             sendEvent(name: "rotateStatus", value: "ccw", isStateChange: true, displayed: false)
@@ -1351,6 +1359,59 @@ private Integer msDelay() {
     return 500
 }
 
+//*******************************  Digest Auth Handling  ******************************
+
+// Adapted from https://github.com/LinkMJB/SmartThings/blob/master/Devices/Samsung%20SmartCam%20SNH-P6410BN/SNH-P6410BN.groovy
+
+// method to set digest token
+def setAuthToken() {
+	trace("setAuth")
+	state.auth = "empty"
+    sendEvent(name: "authenticate", value: "Auth")
+}
+
+// method to set remove token (a.k.a. logout)
+def removeAuthToken() {
+	trace("removeAuth")
+	sendEvent(name: "authenticate", value: "Auth")
+	state.auth = "empty"
+}
+
+// calculate digest token, more details: http://en.wikipedia.org/wiki/Digest_access_authentication#Overview
+private String calcDigestAuth(headers) {
+    def CameraPostGet = "GET"
+	def HA1 = new String("${camUser}:" + headers.realm.trim() + ":${camPassword}").trim().encodeAsMD5()
+	def HA2 = new String("${CameraPostGet}:${CameraPath}").trim().encodeAsMD5()
+
+	// increase nc every request by one
+	if (!state.nc) {
+		state.nc = 1
+	} else {
+		state.nc = state.nc + 1
+	}
+
+	def cnonce = java.util.UUID.randomUUID().toString().replaceAll('-', '').substring(0, 8)
+	def response = new String("${HA1}:" + headers.nonce.trim() + ":" + state.nc + ":" + cnonce + ":" + "auth" + ":${HA2}")
+	def response_enc = response.encodeAsMD5()
+
+	trace("HA1: " + HA1 + " ===== org:" + "${camUser}:" + headers.realm.trim() + ":${camPassword}")
+	trace("HA2: " + HA2 + " ===== org:" + "${CameraPostGet}:${CameraPath}")
+	trace("Response: " + response_enc + " =====   org:" + response)
+	
+	def eol = " "
+        
+    return 'Digest username="' + CamUser.trim() + '",' + eol +
+           'realm="' + headers.realm.trim() + '",' + eol +
+           'qop="' + headers.qop.trim() + '",' + eol +
+           'algorithm="MD5",' + eol +
+           'uri="'+ CameraPath.trim() + '",' +  eol +
+           'nonce="' + headers.nonce.trim() + '",' + eol +
+           'cnonce="' + cnonce.trim() + '",'.trim() + eol +
+           'opaque="",' + eol +
+           'nc=' + state.nc + ',' + eol +
+           'response="' + response_enc.trim() + '"'
+}
+
 //***********************************  Debugging  **********************************
 
 private OLDdoDebug(Object... dbgStr) {
@@ -1381,8 +1442,8 @@ private doDebug(dbgStr, dbgType = null, shift = null, err = null) {  // Thanks g
     def maxLevel = 4
     def level = state.debugLevel ? state.debugLevel : 0
     def levelDelta = 0
-    def prefix = "¦"
-    def pad = "¦"
+    def prefix = "Â¦"
+    def pad = "Â¦"
     switch (shift) {
         case 0:
             level = 0
@@ -1401,7 +1462,7 @@ private doDebug(dbgStr, dbgType = null, shift = null, err = null) {  // Thanks g
     }
 
     if (level > 0) {
-        prefix = prefix.padLeft(level, "¦").padRight(maxLevel, pad)
+        prefix = prefix.padLeft(level, "Â¦").padRight(maxLevel, pad)
     }
 
     level += levelDelta

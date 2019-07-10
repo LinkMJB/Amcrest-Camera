@@ -1383,15 +1383,15 @@ private Integer msDelay() {
 
 // method to set digest token
 def auth() {
-	trace("setAuth")
+	trace("auth")
 	state.auth = "empty"
-        sendEvent(name: "authenticate", value: "auth")
+        sendEvent(name: "authenticate", value: "auth", isStateChange: true, displayed: true)
 }
 
 // method to set remove token (a.k.a. logout)
 def deAuth() {
-	trace("removeAuth")
-	sendEvent(name: "authenticate", value: "auth")
+	trace("deAuth")
+	sendEvent(name: "authenticate", value: "auth", isStateChange: true, displayed: true)
 	state.auth = "empty"
 }
 

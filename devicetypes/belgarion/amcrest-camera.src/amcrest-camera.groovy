@@ -280,8 +280,8 @@ metadata {
             state "RTSP", label: "RTSP Stream", action: "toggleStreamType", icon: "", backgroundColor: "#FFFFFF"
         }
         standardTile("authenticate", "device.button", width: 1, height: 1, canChangeIcon: true) {
-            state "DeAuth", label: '${name}', action: "removeAuthToken", icon: "st.switches.light.on", backgroundColor: "#79b821"
-            state "Auth", label: '${name}', action: "setAuthToken", icon: "st.switches.light.off", backgroundColor: "#ffffff"
+            state "DeAuth", label: '${name}', action: "removeAuthToken", icon: "st.switches.light.off", backgroundColor: "#79b821"
+            state "Auth", label: '${name}', action: "setAuthToken", icon: "st.switches.light.on", backgroundColor: "#ffffff"
         }
 
         main "videoPlayer"
@@ -1369,7 +1369,7 @@ private Integer msDelay() {
 def setAuthToken() {
 	trace("setAuth")
 	state.auth = "empty"
-    sendEvent(name: "authenticate", value: "Auth")
+        sendEvent(name: "authenticate", value: "Auth")
 }
 
 // method to set remove token (a.k.a. logout)
@@ -1381,7 +1381,7 @@ def removeAuthToken() {
 
 // calculate digest token, more details: http://en.wikipedia.org/wiki/Digest_access_authentication#Overview
 private String calcDigestAuth(headers) {
-    def CameraPostGet = "GET"
+        def CameraPostGet = "GET"
 	def HA1 = new String("${camUser}:" + headers.realm.trim() + ":${camPassword}").trim().encodeAsMD5()
 	def HA2 = new String("${CameraPostGet}:${CameraPath}").trim().encodeAsMD5()
 
@@ -1402,7 +1402,7 @@ private String calcDigestAuth(headers) {
 	
 	def eol = " "
         
-    return 'Digest username="' + CamUser.trim() + '",' + eol +
+    return 'Digest username="' + camUser.trim() + '",' + eol +
            'realm="' + headers.realm.trim() + '",' + eol +
            'qop="' + headers.qop.trim() + '",' + eol +
            'algorithm="MD5",' + eol +
